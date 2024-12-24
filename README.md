@@ -1,4 +1,4 @@
-# Document Search Tool - 文件搜尋工具
+# Word And Excel Search - 文件搜尋工具
 
 這是一個跨平台的文件搜尋工具，支援搜尋 Word 和 Excel 文件中的內容。
 
