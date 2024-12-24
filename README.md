@@ -19,7 +19,7 @@
 
 1. clone此專案到本地：
 ```bash
-git clone [你的專案URL]
+git clone https://github.com/TJJAom/WordAndExcelSearch.git
 cd document-search
 ```
 
