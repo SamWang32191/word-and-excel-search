@@ -86,6 +86,27 @@ A: 搜尋速度主要取決於檔案數量和大小，建議：
 - 減少同時搜尋的關鍵字數量
 - 選擇特定的檔案類型進行搜尋
 
+## 錯誤處理
+```
+# 進入專案目錄
+cd D:\myWorkSpace\excelSearch
+
+# 停止所有可能的 node 進程
+taskkill /F /IM node.exe
+
+# 刪除 node_modules 資料夾（使用系統命令）
+if (Test-Path -Path "node_modules") { Remove-Item -Path "node_modules" -Recurse -Force }
+
+# 刪除 package-lock.json（如果存在）
+if (Test-Path -Path "package-lock.json") { Remove-Item -Path "package-lock.json" -Force }
+
+# 清除 npm 快取
+npm cache clean --force
+
+# 重新安裝套件
+npm install electron electron-builder --save-dev
+```
+
 ## 作者
 
 Tom.Tang
