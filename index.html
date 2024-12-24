@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Word與Excel文件搜尋工具 by Tom.Tang - 松凌自製軟體</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f0f0f0;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .search-form {
+      margin-bottom: 20px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    .form-group input[type="text"] {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .checkbox-group {
+      margin: 10px 0;
+    }
+    .checkbox-group label {
+      margin-right: 20px;
+      font-weight: normal;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    button:disabled {
+      background-color: #cccccc;
+      cursor: not-allowed;
+    }
+    .results {
+      margin-top: 20px;
+    }
+    .result-item {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+      background-color: #f9f9f9;
+    }
+    .loading {
+      text-align: center;
+      padding: 20px;
+      display: none;
+    }
+    #selectedPath {
+      margin-left: 10px;
+      color: #666;
+    }
+    .progress {
+      width: 100%;
+      height: 20px;
+      background-color: #f0f0f0;
+      border-radius: 10px;
+      margin: 10px 0;
+      overflow: hidden;
+    }
+    .progress-bar {
+      width: 0%;
+      height: 100%;
+      background-color: #4CAF50;
+      border-radius: 10px;
+      transition: width 0.3s ease;
+    }
+    .keyword-tag {
+      background-color: #e0e0e0;
+      padding: 2px 6px;
+      border-radius: 3px;
+      margin-right: 5px;
+      font-size: 0.9em;
+    }
+    .highlight {
+      background-color: yellow;
+      padding: 2px;
+    }
+    .tabs {
+      display: flex;
+      margin-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab-button {
+      padding: 10px 20px;
+      background-color: #f0f0f0;
+      border: 1px solid #ddd;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      margin-right: 5px;
+      cursor: pointer;
+      position: relative;
+      top: 1px;
+    }
+    .tab-button.active {
+      background-color: #4CAF50;
+      color: white;
+      border-color: #4CAF50;
+    }
+    .tab-content {
+      display: none;
+      padding: 20px 0;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .file-link {
+      color: #0366d6;
+      cursor: pointer;
+      text-decoration: underline;
+    }
+    .file-link:hover {
+      color: #0056b3;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Word與Excel文件搜尋工具 by Tom.Tang - 松凌自製軟體</h1>
+    <div class="search-form">
+      <div class="form-group">
+        <button id="selectDirectory">選擇資料夾</button>
+        <span id="selectedPath"></span>
+      </div>
+      <div class="form-group">
+        <label>搜尋關鍵字（以逗號分隔）：</label>
+        <input type="text" id="searchText" placeholder="例如: 關鍵字1, 關鍵字2, 關鍵字3">
+      </div>
+      <div class="form-group">
+        <label>搜尋檔案類型：</label>
+        <div class="checkbox-group">
+          <label>
+            <input type="checkbox" id="excelFiles" checked> Excel 檔案 (.xlsx, .xls)
+          </label>
+          <label>
+            <input type="checkbox" id="wordFiles" checked> Word 檔案 (.docx, .doc)
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="caseSensitive"> 區分大小寫
+        </label>
+      </div>
+      <button id="searchButton">開始搜尋</button>
+    </div>
+    <div id="loading" class="loading">
+      搜尋中...請稍候...
+      <div class="progress">
+        <div id="progressBar" class="progress-bar"></div>
+      </div>
+      <div id="progressText">已處理 0/0 個檔案 (0%)</div>
+    </div>
+    <div id="results" class="results"></div>
+  </div>
+
+  <script>
+    const { ipcRenderer, shell } = require('electron');
+    let selectedDirectory = '';
+
+    // 這個函數需要在全局範圍，因為它會被 HTML onclick 調用
+    function openFile(filePath) {
+      shell.openPath(filePath);
+    }
+
+    // 等待 DOM 完全加載
+    document.addEventListener('DOMContentLoaded', () => {
+      document.getElementById('selectDirectory').addEventListener('click', async () => {
+        selectedDirectory = await ipcRenderer.invoke('select-directory');
+        document.getElementById('selectedPath').textContent = selectedDirectory || '';
+      });
+
+      ipcRenderer.on('search-progress', (event, { current, total, percentage }) => {
+        document.getElementById('progressBar').style.width = `${percentage}%`;
+        document.getElementById('progressText').textContent = 
+          `已處理 ${current}/${total} 個檔案 (${percentage}%)`;
+      });
+
+      function createResultElement(result, index) {
+        const div = document.createElement('div');
+        div.className = 'result-item';
+        let content = `
+          <p><strong>結果 #${index + 1}</strong></p>
+          <p><strong>檔案：</strong><span class="file-link" onclick="openFile('${result.file.replace(/\\/g, '\\\\')}')">${result.file}</span></p>
+          <p><strong>類型：</strong>${result.type}</p>
+          <p><strong>關鍵字：</strong><span class="keyword-tag">${result.keyword}</span></p>
+        `;
+        
+        if (result.type === 'Excel') {
+          content += `
+            <p><strong>工作表：</strong>${result.sheet}</p>
+            <p><strong>位置：</strong>第${result.row}列, 第${result.column}欄</p>
+          `;
+        }
+        
+        let highlightedContent = result.content;
+        const caseSensitive = document.getElementById('caseSensitive').checked;
+        const searchFor = caseSensitive ? result.keyword : result.keyword.toLowerCase();
+        const contentFor = caseSensitive ? result.content : result.content.toLowerCase();
+        const startIndex = contentFor.indexOf(searchFor);
+        if (startIndex !== -1) {
+          highlightedContent = 
+            result.content.substring(0, startIndex) +
+            `<span class="highlight">${result.content.substring(startIndex, startIndex + result.keyword.length)}</span>` +
+            result.content.substring(startIndex + result.keyword.length);
+        }
+        
+        content += `<p><strong>內容：</strong>${highlightedContent}</p>`;
+        div.innerHTML = content;
+        return div;
+      }
+
+      document.getElementById('searchButton').addEventListener('click', async () => {
+        const searchText = document.getElementById('searchText').value;
+        const caseSensitive = document.getElementById('caseSensitive').checked;
+        const searchExcel = document.getElementById('excelFiles').checked;
+        const searchWord = document.getElementById('wordFiles').checked;
+        
+        if (!selectedDirectory || !searchText) {
+          alert('請選擇資料夾並輸入搜尋關鍵字');
+          return;
+        }
+
+        if (!searchExcel && !searchWord) {
+          alert('請至少選擇一種要搜尋的檔案類型');
+          return;
+        }
+
+        const fileTypes = [];
+        if (searchExcel) fileTypes.push('excel');
+        if (searchWord) fileTypes.push('word');
+
+        document.getElementById('searchButton').disabled = true;
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('progressBar').style.width = '0%';
+        document.getElementById('progressText').textContent = '準備開始搜尋...';
+        document.getElementById('results').innerHTML = '';
+
+        try {
+          const results = await ipcRenderer.invoke('search-files', {
+            directory: selectedDirectory,
+            searchTexts: searchText,
+            caseSensitive,
+            fileTypes
+          });
+
+          const resultsDiv = document.getElementById('results');
+          if (results.length === 0) {
+            resultsDiv.innerHTML = '<p>未找到符合的結果</p>';
+          } else {
+            const excelResults = results.filter(r => r.type === 'Excel');
+            const wordResults = results.filter(r => r.type === 'Word');
+
+            if (searchExcel && searchWord && excelResults.length > 0 && wordResults.length > 0) {
+              resultsDiv.innerHTML = `
+                <div class="tabs">
+                  <button class="tab-button active" data-tab="excel">Excel 結果 (${excelResults.length})</button>
+                  <button class="tab-button" data-tab="word">Word 結果 (${wordResults.length})</button>
+                </div>
+                <div id="excelTab" class="tab-content active">
+                  <h2>Excel 檔案搜尋結果：</h2>
+                  <div id="excelResults"></div>
+                </div>
+                <div id="wordTab" class="tab-content">
+                  <h2>Word 檔案搜尋結果：</h2>
+                  <div id="wordResults"></div>
+                </div>
+              `;
+
+              document.querySelectorAll('.tab-button').forEach(button => {
+                button.addEventListener('click', () => {
+                  document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
+                  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                  button.classList.add('active');
+                  document.getElementById(`${button.dataset.tab}Tab`).classList.add('active');
+                });
+              });
+
+              const excelResultsDiv = document.getElementById('excelResults');
+              excelResults.forEach((result, index) => {
+                const div = createResultElement(result, index);
+                excelResultsDiv.appendChild(div);
+              });
+
+              const wordResultsDiv = document.getElementById('wordResults');
+              wordResults.forEach((result, index) => {
+                const div = createResultElement(result, index);
+                wordResultsDiv.appendChild(div);
+              });
+            } else {
+              resultsDiv.innerHTML = `<h2>找到 ${results.length} 個結果：</h2>`;
+              results.forEach((result, index) => {
+                const div = createResultElement(result, index);
+                resultsDiv.appendChild(div);
+              });
+            }
+          }
+        } catch (error) {
+          console.error('搜尋錯誤：', error);
+          document.getElementById('results').innerHTML = `
+            <p>搜尋過程中發生錯誤</p>
+            <p>錯誤訊息：${error.message}</p>
+          `;
+        }
+
+        document.getElementById('searchButton').disabled = false;
+        document.getElementById('loading').style.display = 'none';
+      });
+
+      document.getElementById('searchText').addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+          document.getElementById('searchButton').click();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
