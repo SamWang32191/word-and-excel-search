@@ -139,11 +139,24 @@
     .file-link:hover {
       color: #0056b3;
     }
+    .cache-info {
+      margin: 20px 0;
+      /* padding: 15px; */
+      /* background-color: #f8f9fa; */
+      border-radius: 8px;
+    }
+    .cache-button {
+      background-color: #dc3545;
+      margin-right: 10px;
+    }
+    .cache-button:hover {
+      background-color: #c82333;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Word與Excel文件搜尋工具 by Tom.Tang - 松凌自製軟體</h1>
+    <h1>Word 與 Excel 文件搜尋工具 v1.0.1</h1>
     <div class="search-form">
       <div class="form-group">
         <button id="selectDirectory">選擇資料夾</button>
@@ -169,6 +182,7 @@
           <input type="checkbox" id="caseSensitive"> 區分大小寫
         </label>
       </div>
+
       <button id="searchButton">開始搜尋</button>
     </div>
     <div id="loading" class="loading">
@@ -178,6 +192,11 @@
       </div>
       <div id="progressText">已處理 0/0 個檔案 (0%)</div>
     </div>
+    <div class="cache-info">
+      <button id="clearCache" class="cache-button">清除快取(當資料夾中的檔案有改變時請按此按鈕)</button>
+      <br>
+      <span id="cacheInfo">Word快取: 0 個檔案<br>Excel快取: 0 個檔案</span>
+    </div>
     <div id="results" class="results"></div>
   </div>
 
@@ -185,17 +204,29 @@
     const { ipcRenderer, shell } = require('electron');
     let selectedDirectory = '';
 
-    // 這個函數需要在全局範圍，因為它會被 HTML onclick 調用
     function openFile(filePath) {
       shell.openPath(filePath);
     }
 
-    // 等待 DOM 完全加載
-    document.addEventListener('DOMContentLoaded', () => {
-      document.getElementById('selectDirectory').addEventListener('click', async () => {
-        selectedDirectory = await ipcRenderer.invoke('select-directory');
-        document.getElementById('selectedPath').textContent = selectedDirectory || '';
+    async function updateCacheInfo() {
+      const { wordCount, excelCount } = await ipcRenderer.invoke('get-cache-info');
+      document.getElementById('cacheInfo').textContent = 
+        `Word快取: ${wordCount} 個檔案, Excel快取: ${excelCount} 個檔案`;
+    }
+
+    document.addEventListener('DOMContentLoaded', async () => {
+      await updateCacheInfo();
+
+      document.getElementById('clearCache').addEventListener('click', async () => {
+        await ipcRenderer.invoke('clear-cache');
+        await updateCacheInfo();
       });
+
+      document.getElementById('selectDirectory').addEventListener('click', async () => {
+  selectedDirectory = await ipcRenderer.invoke('select-directory');
+  document.getElementById('selectedPath').textContent = selectedDirectory || '';
+  await updateCacheInfo(); // 更新快取資訊
+});
 
       ipcRenderer.on('search-progress', (event, { current, total, percentage }) => {
         document.getElementById('progressBar').style.width = `${percentage}%`;
@@ -271,6 +302,8 @@
             fileTypes
           });
 
+          await updateCacheInfo();
+
           const resultsDiv = document.getElementById('results');
           if (results.length === 0) {
             resultsDiv.innerHTML = '<p>未找到符合的結果</p>';
@@ -341,5 +374,6 @@
       });
     });
   </script>
+      <h2>Tom.Tang - 松凌自製軟體</h2>
 </body>
 </html>

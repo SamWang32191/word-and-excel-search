@@ -33,9 +33,10 @@
     }
   },
   "dependencies": {
+    "bluebird": "^3.7.2",
     "exceljs": "^4.4.0",
     "iconv-lite": "^0.6.3",
-    "mammoth": "^1.8.0",
+    "mammoth": "^1.9.0",
     "node-stream-zip": "^1.15.0",
     "xlsx": "^0.18.5"
   },
