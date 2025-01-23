@@ -3,12 +3,16 @@ const path = require('path');
 const XLSX = require('xlsx');
 const fs = require('fs');
 const mammoth = require('mammoth');
+const WordExtractor = require("word-extractor"); 
+const extractor = new WordExtractor();
 const Promise = require('bluebird');
-
-const CONCURRENT_LIMIT = 5;
+const iconv = require('iconv-lite'); // 引入 iconv-lite 套件（需先安裝）
+const OleDoc = require('ole-doc').OleDoc;
+const CONCURRENT_LIMIT = 10;
 const fileCache = new Map();
 const excelCache = new Map();
 let mainWindow;
+
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -25,6 +29,15 @@ function createWindow() {
   }
 
   mainWindow.loadFile('index.html');
+}
+
+function clearCache() {
+  fileCache.clear();
+  excelCache.clear();
+  return {
+    wordCount: fileCache.size,
+    excelCount: excelCache.size
+  };
 }
 
 app.whenReady().then(createWindow);
@@ -51,12 +64,7 @@ ipcMain.handle('select-directory', async () => {
 });
 
 ipcMain.handle('clear-cache', () => {
-  fileCache.clear();
-  excelCache.clear();
-  return {
-    wordCount: fileCache.size,
-    excelCount: excelCache.size
-  };
+  return clearCache();
 });
 
 ipcMain.handle('get-cache-info', () => {
@@ -119,8 +127,8 @@ ipcMain.handle('search-files', async (event, { directory, searchTexts, caseSensi
                 if (cell) {
                   const cellText = cell.toString();
                   keywords.forEach(keyword => {
-                    const searchFor = caseSensitive ? keyword : keyword.toLowerCase();
-                    const searchIn = caseSensitive ? cellText : cellText.toLowerCase();
+                    const searchFor = caseSensitive ? keyword.trim() : keyword.trim().toLowerCase();
+                    const searchIn = caseSensitive ? cellText.trim() : cellText.trim().toLowerCase();
                     if (searchIn.includes(searchFor)) {
                       results.push({
                         file: filePath,
@@ -149,9 +157,15 @@ ipcMain.handle('search-files', async (event, { directory, searchTexts, caseSensi
         if (fileCache.has(filePath)) {
           text = fileCache.get(filePath);
         } else {
-          const buffer = fs.readFileSync(filePath);
-          const result = await mammoth.extractRawText({buffer});
-          text = result.value;
+          if (ext === '.docx') {
+            const buffer = fs.readFileSync(filePath);
+            const result = await mammoth.extractRawText({buffer});
+            text = result.value;
+          } else {
+            // 使用 word-extractor 處理 .doc
+            text = await extractor.extract(filePath)
+              .then(doc => doc.getBody());
+          }
           fileCache.set(filePath, text);
         }
         
@@ -176,9 +190,11 @@ ipcMain.handle('search-files', async (event, { directory, searchTexts, caseSensi
           });
         }
       } catch (error) {
-        console.error(`讀取Word檔案錯誤 ${filePath}: ${error}`);
+        const errorMessage = `read word error -> ${filePath}: ${error}`;
+        const utf8ErrorMessage = iconv.encode(errorMessage, 'utf-8');
+        console.error(utf8ErrorMessage.toString('utf-8'));
       }
-    }
+     }
 
     processedFiles++;
     if (processedFiles <= totalFiles) {
