@@ -15,7 +15,7 @@
       background-color: white;
       padding: 20px;
       border-radius: 8px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
     .search-form {
       margin-bottom: 20px;
@@ -141,8 +141,6 @@
     }
     .cache-info {
       margin: 20px 0;
-      /* padding: 15px; */
-      /* background-color: #f8f9fa; */
       border-radius: 8px;
     }
     .cache-button {
@@ -152,11 +150,32 @@
     .cache-button:hover {
       background-color: #c82333;
     }
+    .error-container {
+      max-height: 100px;
+      overflow-y: auto;
+      margin: 10px 0;
+      display: none;
+      border: 1px solid #f5c6cb;
+      border-radius: 4px;
+      background-color: #f8d7da;
+      color: #721c24;
+      padding: 10px;
+    }
+    .error-message {
+      margin-bottom: 5px;
+      border-bottom: 1px solid #f5c6cb;
+      padding-bottom: 5px;
+    }
+    .error-message:last-child {
+      border-bottom: none;
+      margin-bottom: 0;
+      padding-bottom: 0;
+    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>Word 與 Excel 文件搜尋工具 v1.0.1</h1>
+    <h1>Word 與 Excel 文件搜尋工具 v1.0.2</h1>
     <div class="search-form">
       <div class="form-group">
         <button id="selectDirectory">選擇資料夾</button>
@@ -182,9 +201,14 @@
           <input type="checkbox" id="caseSensitive"> 區分大小寫
         </label>
       </div>
-
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="enableCache" checked> 啟用快取
+        </label>
+      </div>
       <button id="searchButton">開始搜尋</button>
     </div>
+    
     <div id="loading" class="loading">
       搜尋中...請稍候...
       <div class="progress">
@@ -192,12 +216,30 @@
       </div>
       <div id="progressText">已處理 0/0 個檔案 (0%)</div>
     </div>
+
+    <div class="error-container" id="errorContainer">
+      <div id="errorMessages"></div>
+    </div>
+
     <div class="cache-info">
       <button id="clearCache" class="cache-button">清除快取(當資料夾中的檔案有改變時請按此按鈕)</button>
       <br>
       <span id="cacheInfo">Word快取: 0 個檔案<br>Excel快取: 0 個檔案</span>
     </div>
-    <div id="results" class="results"></div>
+
+    <!-- 修改後的頁籤 -->
+    <div class="tabs">
+      <button id="allTab" class="tab-button active">全部結果(<span id="allCount">0</span>)</button>
+      <button id="excelTab" class="tab-button">Excel(<span id="excelCount">0</span>)</button>
+      <button id="wordTab" class="tab-button">Word(<span id="wordCount">0</span>)</button>
+    </div>
+
+    <!-- 修改後的結果區域 -->
+    <div id="results" class="results">
+      <div id="allResults" class="tab-content active"></div>
+      <div id="excelResults" class="tab-content"></div>
+      <div id="wordResults" class="tab-content"></div>
+    </div>
   </div>
 
   <script>
@@ -208,14 +250,44 @@
       shell.openPath(filePath);
     }
 
+    function renderResult(result, index, container) {
+      const div = document.createElement('div');
+      div.className = 'result-item';
+      div.innerHTML = `
+        <p><strong>結果 #${index + 1}</strong></p>
+        <p><strong>檔案：</strong><span class="file-link" onclick="openFile('${result.file.replace(/\\/g, '\\\\')}')">${result.file}</span></p>
+        <p><strong>類型：</strong>${result.type}</p>
+        <p><strong>關鍵字：</strong><span class="keyword-tag">${result.keyword}</span></p>
+        ${result.type === 'Excel' ? 
+          `<p><strong>工作表：</strong>${result.sheet}</p><p><strong>位置：</strong>第${result.row}列, 第${result.column}欄</p>` : 
+          ''}
+        <p><strong>內容：</strong>${result.content}</p>
+      `;
+      container.appendChild(div);
+    }
+
     async function updateCacheInfo() {
       const { wordCount, excelCount } = await ipcRenderer.invoke('get-cache-info');
-      document.getElementById('cacheInfo').textContent = 
-        `Word快取: ${wordCount} 個檔案, Excel快取: ${excelCount} 個檔案`;
+      document.getElementById('cacheInfo').textContent =
+        `Word快取: ${wordCount} 個檔案\nExcel快取: ${excelCount} 個檔案`;
     }
 
     document.addEventListener('DOMContentLoaded', async () => {
       await updateCacheInfo();
+
+      // 頁籤切換邏輯
+      document.querySelectorAll('.tab-button').forEach(button => {
+        button.addEventListener('click', () => {
+          document.querySelectorAll('.tab-button').forEach(btn => 
+            btn.classList.remove('active'));
+          document.querySelectorAll('.tab-content').forEach(content => 
+            content.classList.remove('active'));
+          
+          button.classList.add('active');
+          const tabId = button.id.replace('Tab', 'Results');
+          document.getElementById(tabId).classList.add('active');
+        });
+      });
 
       document.getElementById('clearCache').addEventListener('click', async () => {
         await ipcRenderer.invoke('clear-cache');
@@ -223,57 +295,33 @@
       });
 
       document.getElementById('selectDirectory').addEventListener('click', async () => {
-  selectedDirectory = await ipcRenderer.invoke('select-directory');
-  document.getElementById('selectedPath').textContent = selectedDirectory || '';
-  await updateCacheInfo(); // 更新快取資訊
-});
+        selectedDirectory = await ipcRenderer.invoke('select-directory');
+        document.getElementById('selectedPath').textContent = selectedDirectory || '';
+        await updateCacheInfo();
+      });
 
       ipcRenderer.on('search-progress', (event, { current, total, percentage }) => {
         document.getElementById('progressBar').style.width = `${percentage}%`;
-        document.getElementById('progressText').textContent = 
+        document.getElementById('progressText').textContent =
           `已處理 ${current}/${total} 個檔案 (${percentage}%)`;
       });
 
-      function createResultElement(result, index) {
-        const div = document.createElement('div');
-        div.className = 'result-item';
-        let content = `
-          <p><strong>結果 #${index + 1}</strong></p>
-          <p><strong>檔案：</strong><span class="file-link" onclick="openFile('${result.file.replace(/\\/g, '\\\\')}')">${result.file}</span></p>
-          <p><strong>類型：</strong>${result.type}</p>
-          <p><strong>關鍵字：</strong><span class="keyword-tag">${result.keyword}</span></p>
-        `;
-        
-        if (result.type === 'Excel') {
-          content += `
-            <p><strong>工作表：</strong>${result.sheet}</p>
-            <p><strong>位置：</strong>第${result.row}列, 第${result.column}欄</p>
-          `;
-        }
-        
-        let highlightedContent = result.content;
-        const caseSensitive = document.getElementById('caseSensitive').checked;
-        const searchFor = caseSensitive ? result.keyword : result.keyword.toLowerCase();
-        const contentFor = caseSensitive ? result.content : result.content.toLowerCase();
-        const startIndex = contentFor.indexOf(searchFor);
-        if (startIndex !== -1) {
-          highlightedContent = 
-            result.content.substring(0, startIndex) +
-            `<span class="highlight">${result.content.substring(startIndex, startIndex + result.keyword.length)}</span>` +
-            result.content.substring(startIndex + result.keyword.length);
-        }
-        
-        content += `<p><strong>內容：</strong>${highlightedContent}</p>`;
-        div.innerHTML = content;
-        return div;
-      }
+      ipcRenderer.on('search-error', (event, message) => {
+        const container = document.getElementById('errorContainer');
+        const messagesDiv = document.getElementById('errorMessages');
+        container.style.display = 'block';
+        const errorDiv = document.createElement('div');
+        errorDiv.className = 'error-message';
+        errorDiv.textContent = message;
+        messagesDiv.appendChild(errorDiv);
+      });
 
       document.getElementById('searchButton').addEventListener('click', async () => {
         const searchText = document.getElementById('searchText').value;
         const caseSensitive = document.getElementById('caseSensitive').checked;
         const searchExcel = document.getElementById('excelFiles').checked;
         const searchWord = document.getElementById('wordFiles').checked;
-        
+
         if (!selectedDirectory || !searchText) {
           alert('請選擇資料夾並輸入搜尋關鍵字');
           return;
@@ -288,85 +336,79 @@
         if (searchExcel) fileTypes.push('excel');
         if (searchWord) fileTypes.push('word');
 
+        // 重設計數
+        document.getElementById('allCount').textContent = '0';
+        document.getElementById('excelCount').textContent = '0';
+        document.getElementById('wordCount').textContent = '0';
+
         document.getElementById('searchButton').disabled = true;
         document.getElementById('loading').style.display = 'block';
         document.getElementById('progressBar').style.width = '0%';
         document.getElementById('progressText').textContent = '準備開始搜尋...';
-        document.getElementById('results').innerHTML = '';
+        document.getElementById('allResults').innerHTML = '';
+        document.getElementById('excelResults').innerHTML = '';
+        document.getElementById('wordResults').innerHTML = '';
+        document.getElementById('errorContainer').style.display = 'none';
+        document.getElementById('errorMessages').innerHTML = '';
 
         try {
           const results = await ipcRenderer.invoke('search-files', {
             directory: selectedDirectory,
             searchTexts: searchText,
             caseSensitive,
-            fileTypes
+            fileTypes,
+            enableCache: document.getElementById('enableCache').checked,
           });
 
           await updateCacheInfo();
 
-          const resultsDiv = document.getElementById('results');
           if (results.length === 0) {
-            resultsDiv.innerHTML = '<p>未找到符合的結果</p>';
+            document.querySelectorAll('.tab-content').forEach(tab => {
+              tab.innerHTML = '<p>未找到符合的結果</p>';
+            });
+            // 重設計數
+            document.getElementById('allCount').textContent = '0';
+            document.getElementById('excelCount').textContent = '0';
+            document.getElementById('wordCount').textContent = '0';
           } else {
             const excelResults = results.filter(r => r.type === 'Excel');
             const wordResults = results.filter(r => r.type === 'Word');
-
-            if (searchExcel && searchWord && excelResults.length > 0 && wordResults.length > 0) {
-              resultsDiv.innerHTML = `
-                <div class="tabs">
-                  <button class="tab-button active" data-tab="excel">Excel 結果 (${excelResults.length})</button>
-                  <button class="tab-button" data-tab="word">Word 結果 (${wordResults.length})</button>
-                </div>
-                <div id="excelTab" class="tab-content active">
-                  <h2>Excel 檔案搜尋結果：</h2>
-                  <div id="excelResults"></div>
-                </div>
-                <div id="wordTab" class="tab-content">
-                  <h2>Word 檔案搜尋結果：</h2>
-                  <div id="wordResults"></div>
-                </div>
-              `;
-
-              document.querySelectorAll('.tab-button').forEach(button => {
-                button.addEventListener('click', () => {
-                  document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
-                  document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                  button.classList.add('active');
-                  document.getElementById(`${button.dataset.tab}Tab`).classList.add('active');
-                });
-              });
-
-              const excelResultsDiv = document.getElementById('excelResults');
-              excelResults.forEach((result, index) => {
-                const div = createResultElement(result, index);
-                excelResultsDiv.appendChild(div);
-              });
-
-              const wordResultsDiv = document.getElementById('wordResults');
-              wordResults.forEach((result, index) => {
-                const div = createResultElement(result, index);
-                wordResultsDiv.appendChild(div);
-              });
-            } else {
-              resultsDiv.innerHTML = `<h2>找到 ${results.length} 個結果：</h2>`;
-              results.forEach((result, index) => {
-                const div = createResultElement(result, index);
-                resultsDiv.appendChild(div);
-              });
-            }
+            
+            // 更新頁籤計數
+            document.getElementById('allCount').textContent = results.length;
+            document.getElementById('excelCount').textContent = excelResults.length;
+            document.getElementById('wordCount').textContent = wordResults.length;
+            
+            // 更新全部結果
+            const allResultsDiv = document.getElementById('allResults');
+            allResultsDiv.innerHTML = `<h2>找到 ${results.length} 個結果：</h2>`;
+            results.forEach((result, index) => renderResult(result, index, allResultsDiv));
+            
+            // 更新 Excel 結果
+            const excelResultsDiv = document.getElementById('excelResults');
+            excelResultsDiv.innerHTML = `<h2>找到 ${excelResults.length} 個 Excel 結果：</h2>`;
+            excelResults.forEach((result, index) => renderResult(result, index, excelResultsDiv));
+            
+            // 更新 Word 結果
+            const wordResultsDiv = document.getElementById('wordResults');
+            wordResultsDiv.innerHTML = `<h2>找到 ${wordResults.length} 個 Word 結果：</h2>`;
+            wordResults.forEach((result, index) => renderResult(result, index, wordResultsDiv));
           }
         } catch (error) {
           console.error('搜尋錯誤：', error);
-          document.getElementById('results').innerHTML = `
+          document.getElementById('allResults').innerHTML = `
             <p>搜尋過程中發生錯誤</p>
             <p>錯誤訊息：${error.message}</p>
           `;
+          document.getElementById('excelResults').innerHTML = document.getElementById('allResults').innerHTML;
+          document.getElementById('wordResults').innerHTML = document.getElementById('allResults').innerHTML;
         }
 
         document.getElementById('searchButton').disabled = false;
         document.getElementById('loading').style.display = 'none';
       });
 
+      // 按下 Enter 開始搜索
       document.getElementById('searchText').addEventListener('keypress', (event) => {
         if (event.key === 'Enter') {
           document.getElementById('searchButton').click();
@@ -374,6 +416,6 @@
       });
     });
   </script>
-      <h2>Tom.Tang - 松凌自製軟體</h2>
+  <h2>Tom.Tang - 松凌自製軟體</h2>
 </body>
 </html>
