@@ -7,6 +7,7 @@ const WordExtractor = require('word-extractor');
 const extractor = new WordExtractor();
 const Promise = require('bluebird');
 const iconv = require('iconv-lite');
+const _ = require('underscore');
 
 // 配置
 const CONCURRENT_LIMIT = 5; // 並發限制
