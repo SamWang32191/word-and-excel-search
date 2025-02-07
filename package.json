@@ -102,7 +102,13 @@
     "underscore": "^1.13.6",
     "word-extractor": "^1.0.4",
     "xlsx": "^0.18.5",
-    "xmlbuilder": "^15.1.1"
+    "xmlbuilder": "^15.1.1",
+    "buffer-crc32": "^0.2.13",
+    "safer-buffer": "^2.1.2",
+    "fd-slicer": "^1.1.0",
+    "xmlchars": "^2.2.0",
+    "yauzl": "^2.10.0",
+    "pend": "^1.2.0"
   },
   "devDependencies": {
     "electron": "^28.3.3",
