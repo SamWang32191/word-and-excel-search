@@ -1,8 +1,14 @@
 {
   "name": "document-search",
   "version": "1.0.2",
-  "description": "Document Search Application",
-  "author": "Tom",
+  "description": "A powerful tool for searching content in Word and Excel files, supporting multiple keywords and smart caching",
+  "author": {
+    "name": "Tom.Tang",
+    "email": "tjjaom@gmail.com",
+    "url": "https://github.com/TJJAom"
+  },
+  "homepage": "https://github.com/TJJAom/WordAndExcelSearch",
+  "license": "MIT",
   "main": "main.js",
   "scripts": {
     "start": "chcp 65001 && powershell -NoProfile -Command \"$OutputEncoding = [System.Text.Encoding]::UTF8; npm run start-main\"",
@@ -14,9 +20,9 @@
     "dist": "electron-builder"
   },
   "build": {
-    "appId": "com.document.search",
+    "appId": "com.tom.document.search",
     "productName": "Document Search Tool V1.0.2 by Tom",
-    "copyright": "Copyright © 2024 Tom",
+    "copyright": "Copyright © 2024 Tom.Tang",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -48,22 +54,27 @@
       "target": [
         {
           "target": "nsis",
-          "arch": [
-            "x64"
-          ]
+          "arch": ["x64"]
         }
       ],
-      "icon": "icon.ico"
+      "icon": "icon.ico",
+      "artifactName": "${productName}-Setup-${version}.${ext}",
+      "publisherName": "Tom.Tang",
+      "verifyUpdateCodeSignature": false
     },
     "nsis": {
       "oneClick": false,
+      "perMachine": false,
       "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": true,
+      "displayLanguageSelector": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "Document Search Tool",
-      "installerIcon": "build/icon.ico",
-      "uninstallerIcon": "build/icon.ico",
-      "installerHeaderIcon": "build/icon.ico"
+      "installerHeaderIcon": "build/icon.ico",
+      "include": "installer.nsh"
     },
     "dmg": {
       "contents": [
