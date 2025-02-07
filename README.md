@@ -1,62 +1,52 @@
 # Word And Excel Search - 文件搜尋工具
 
-這是一個跨平台的文件搜尋工具，支援搜尋 Word 和 Excel 文件中的內容。
+這是一個跨平台的文件搜尋工具，支援搜尋 Word 和 Excel 文件中的內容。使用 Electron 開發，提供快速且便利的文件內容搜尋功能。
 
 ## 功能特點
 
-- 支援 .docx、.doc、.xlsx、.xls 檔案格式
-- 可同時搜尋多個關鍵字
-- 支援區分大小寫搜尋
-- 即時顯示搜尋進度
-- 支援 Windows 和 macOS 系統
+* 支援多種檔案格式：
+  * Word: .docx、.doc
+  * Excel: .xlsx、.xls
+
+* 多功能搜尋選項：
+  * 支援同時搜尋多個關鍵字（以逗號分隔）
+  * 可選擇是否區分大小寫
+  * 可選擇要搜尋的檔案類型（Word 和/或 Excel）
+
+* 智能快取功能：
+  * 可啟用/停用檔案快取功能
+  * 智能緩存已讀取的檔案內容，加速重複搜尋
+  * 提供快取清除功能
+
+* 即時回饋：
+  * 即時顯示搜尋進度
+  * 清晰的錯誤提示
+  * 分類顯示搜尋結果（全部/Excel/Word）
+
+* 跨平台支援：
+  * Windows
+  * macOS
 
 ## 系統需求
 
-- Node.js 14.0.0 或更高版本
-- npm 或 yarn 套件管理器
+* Node.js 14.0.0 或更高版本
+* npm 或 yarn 套件管理器
+* Windows 或 macOS 作業系統
 
 ## 安裝步驟
 
-1. clone此專案到本地：
+1. 下載並安裝最新版本：
+   * Windows: 下載並執行 .exe 安裝檔
+   * macOS: 下載 .dmg 檔案並安裝
+
+2. 開發者安裝：
 ```bash
+# 克隆專案
 git clone https://github.com/TJJAom/WordAndExcelSearch.git
-cd document-search
-```
+cd WordAndExcelSearch
 
-2. 安裝依賴套件：
-```bash
+# 安裝依賴
 npm install
-# 或使用 yarn
-yarn install
-```
-
-3. 執行應用程式：
-```bash
-npm start
-# 或使用 yarn
-yarn start
-```
-
-## 開發執行
-
-如果您想要進行開發或修改，可以使用以下指令：
-
-```bash
-# 執行開發模式
-npm run start
-# 或
-yarn start
-```
-
-## 打包應用程式
-
-若要建立獨立的應用程式檔案：
-
-```bash
-# 對當前平台進行打包
-npm run build
-# 或
-yarn build
 ```
 
 ## 使用說明
@@ -64,48 +54,62 @@ yarn build
 1. 啟動應用程式
 2. 點擊「選擇資料夾」按鈕選擇要搜尋的目錄
 3. 在搜尋關鍵字欄位中輸入要搜尋的字詞（多個關鍵字請用逗號分隔）
-4. 選擇是否要區分大小寫
-5. 選擇要搜尋的檔案類型（Word 和/或 Excel）
-6. 點擊「開始搜尋」按鈕
-7. 等待搜尋完成，結果會顯示在下方
+4. 設定搜尋選項：
+   * 選擇是否要區分大小寫
+   * 選擇要搜尋的檔案類型（Word 和/或 Excel）
+   * 選擇是否啟用快取功能
+5. 點擊「開始搜尋」按鈕
+6. 在分頁式介面中查看搜尋結果：
+   * 全部結果
+   * Excel 檔案結果
+   * Word 檔案結果
+
+## 快取功能說明
+
+快取功能可以大幅提升重複搜尋的效能：
+
+* 啟用快取：預設開啟，可加速重複搜尋相同檔案的速度
+* 快取管理：
+  * 顯示目前快取的 Word 和 Excel 檔案數量
+  * 提供清除快取按鈕（當資料夾中的檔案有更新時建議使用）
+* 快取限制：
+  * 最大快取容量：1000 個檔案
+  * 使用 LRU（最近最少使用）演算法自動管理快取空間
+
+## 開發執行
+
+```bash
+# 開發模式執行
+npm start
+
+# 建立應用程式
+npm run build
+
+# 建立特定平台版本
+npm run build:win    # Windows
+npm run build:mac    # macOS
+```
 
 ## 注意事項
 
-- 在 macOS 系統上首次執行時，可能會出現安全性警告，請在「系統偏好設定」→「安全性與隱私權」中允許應用程式執行
-- 搜尋大量檔案時可能需要較長時間，請耐心等待
-- 建議不要同時搜尋太多檔案，以免影響效能
+* 在 macOS 系統上首次執行時，可能會出現安全性警告，請在「系統偏好設定」→「安全性與隱私權」中允許應用程式執行
+* 搜尋大量檔案時建議啟用快取功能以提升效能
+* 如果檔案內容有更新，請使用「清除快取」按鈕重新整理快取資料
 
 ## 常見問題
 
-Q: 為什麼我的 Mac 無法開啟應用程式？
-A: 這是因為 macOS 的安全性設定，請在「系統偏好設定」→「安全性與隱私權」中允許應用程式執行。
+### Q: 為什麼搜尋同樣的內容第二次特別快？
+A: 這是因為啟用了快取功能，系統會記住已讀取的檔案內容，不需要重新讀取檔案。
 
-Q: 搜尋速度很慢怎麼辦？
-A: 搜尋速度主要取決於檔案數量和大小，建議：
-- 縮小搜尋範圍
-- 減少同時搜尋的關鍵字數量
-- 選擇特定的檔案類型進行搜尋
+### Q: 什麼時候需要清除快取？
+A: 當資料夾中的檔案內容有更新，或者想要確保搜尋最新內容時，建議清除快取。
 
-## 錯誤處理
-```bash
-# 進入專案目錄
-cd D:\myWorkSpace\excelSearch
-
-# 停止所有可能的 node 進程
-taskkill /F /IM node.exe
-
-# 刪除 node_modules 資料夾（使用系統命令）
-if (Test-Path -Path "node_modules") { Remove-Item -Path "node_modules" -Recurse -Force }
-
-# 刪除 package-lock.json（如果存在）
-if (Test-Path -Path "package-lock.json") { Remove-Item -Path "package-lock.json" -Force }
-
-# 清除 npm 快取
-npm cache clean --force
-
-# 重新安裝套件
-npm install electron electron-builder --save-dev
-```
+### Q: 搜尋速度很慢怎麼辦？
+A: 建議：
+* 確認快取功能已啟用
+* 縮小搜尋範圍
+* 減少同時搜尋的關鍵字數量
+* 選擇特定的檔案類型進行搜尋
 
 ## 作者
 
