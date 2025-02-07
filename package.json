@@ -11,7 +11,7 @@
   "license": "MIT",
   "main": "main.js",
   "scripts": {
-    "start": "chcp 65001 && powershell -NoProfile -Command \"$OutputEncoding = [System.Text.Encoding]::UTF8; npm run start-main\"",
+    "start": "electron .",
     "start-main": "electron .",
     "build": "electron-builder",
     "build:mac": "electron-builder --mac",
