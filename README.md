@@ -29,8 +29,8 @@
 
 ## 系統需求
 
-* Node.js 14.0.0 或更高版本
-* npm 或 yarn 套件管理器
+* Node.js 21.0.0 或更高版本
+* pnpm 或 yarn 套件管理器
 * Windows 或 macOS 作業系統
 
 ## 安裝步驟
@@ -80,14 +80,14 @@ npm install
 
 ```bash
 # 開發模式執行
-npm start
+pnpm start
 
 # 建立應用程式
-npm run build
+pnpm run build
 
 # 建立特定平台版本
-npm run build:win    # Windows
-npm run build:mac    # macOS
+pnpm run build:win    # Windows
+pnpm run build:mac    # macOS
 ```
 
 ## 注意事項
