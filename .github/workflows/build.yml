@@ -23,12 +23,31 @@ jobs:
       - name: Check out Git repository
         uses: actions/checkout@v3
 
-      - name: Install Node.js and pnpm
+      - name: Install Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 21
           cache: 'pnpm'
-          pnpm-version: 'latest'  # 直接在這裡指定安裝 pnpm
+
+      # 統一安裝 pnpm 並處理各平台 PATH 問題
+      - name: Install and Setup pnpm
+        run: |
+          npm install -g pnpm
+          echo "pnpm version: $(pnpm --version)"
+          
+          # Windows 平台處理
+          if [[ "$RUNNER_OS" == "Windows" ]]; then
+            echo "Adding pnpm to PATH for Windows"
+            echo "$(npm prefix -g)" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+            echo "$(npm prefix -g)\node_modules\pnpm\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          else
+            # macOS/Linux 平台處理
+            echo "Adding pnpm to PATH for macOS/Linux"
+            echo "$(npm prefix -g)/bin" >> $GITHUB_PATH
+          fi
+
+      - name: Verify pnpm
+        run: pnpm --version
 
       - name: Install Dependencies with pnpm
         run: pnpm install
