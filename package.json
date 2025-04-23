@@ -1,6 +1,6 @@
 {
   "name": "document-search",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A powerful tool for searching content in Word and Excel files, supporting multiple keywords and smart caching",
   "author": {
     "name": "Tom.Tang",
@@ -21,8 +21,8 @@
   },
   "build": {
     "appId": "com.tom.document.search",
-    "productName": "Document Search Tool V1.0.2 by Tom",
-    "copyright": "Copyright © 2024 Tom.Tang",
+    "productName": "Document Search Tool V1.1.1 by Tom",
+    "copyright": "Copyright © 2025 Tom.Tang",
     "directories": {
       "output": "dist",
       "buildResources": "build"
@@ -115,7 +115,7 @@
     "xmlbuilder": "^15.1.1",
     "buffer-crc32": "^0.2.13",
     "safer-buffer": "^2.1.2",
-    "fd-slicer": "^1.1.0",
+    "fd-slicer": "^1.1.1",
     "xmlchars": "^2.2.0",
     "yauzl": "^2.10.0",
     "pend": "^1.2.0"
