@@ -1,6 +1,6 @@
 {
   "name": "document-search",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "A powerful tool for searching content in Word and Excel files, supporting multiple keywords and smart caching",
   "author": {
     "name": "Tom.Tang",

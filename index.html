@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Word與Excel文件搜尋工具 by Tom.Tang - 松凌自製軟體</title>
+  <title>Word與Excel文件搜尋工具 by Tom - 造名堂室內空間設計</title>
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -175,7 +175,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>Word 與 Excel 文件搜尋工具 v1.0.2</h1>
+    <h1>Word 與 Excel 文件搜尋工具 v1.1.0</h1>
     <div class="search-form">
       <div class="form-group">
         <button id="selectDirectory">選擇資料夾</button>
@@ -208,7 +208,7 @@
       </div>
       <button id="searchButton">開始搜尋</button>
     </div>
-    
+
     <div id="loading" class="loading">
       搜尋中...請稍候...
       <div class="progress">
@@ -258,8 +258,8 @@
         <p><strong>檔案：</strong><span class="file-link" onclick="openFile('${result.file.replace(/\\/g, '\\\\')}')">${result.file}</span></p>
         <p><strong>類型：</strong>${result.type}</p>
         <p><strong>關鍵字：</strong><span class="keyword-tag">${result.keyword}</span></p>
-        ${result.type === 'Excel' ? 
-          `<p><strong>工作表：</strong>${result.sheet}</p><p><strong>位置：</strong>第${result.row}列, 第${result.column}欄</p>` : 
+        ${result.type === 'Excel' ?
+          `<p><strong>工作表：</strong>${result.sheet}</p><p><strong>位置：</strong>第${result.row}列, 第${result.column}欄</p>` :
           ''}
         <p><strong>內容：</strong>${result.content}</p>
       `;
@@ -278,11 +278,11 @@
       // 頁籤切換邏輯
       document.querySelectorAll('.tab-button').forEach(button => {
         button.addEventListener('click', () => {
-          document.querySelectorAll('.tab-button').forEach(btn => 
+          document.querySelectorAll('.tab-button').forEach(btn =>
             btn.classList.remove('active'));
-          document.querySelectorAll('.tab-content').forEach(content => 
+          document.querySelectorAll('.tab-content').forEach(content =>
             content.classList.remove('active'));
-          
+
           button.classList.add('active');
           const tabId = button.id.replace('Tab', 'Results');
           document.getElementById(tabId).classList.add('active');
@@ -373,22 +373,22 @@
           } else {
             const excelResults = results.filter(r => r.type === 'Excel');
             const wordResults = results.filter(r => r.type === 'Word');
-            
+
             // 更新頁籤計數
             document.getElementById('allCount').textContent = results.length;
             document.getElementById('excelCount').textContent = excelResults.length;
             document.getElementById('wordCount').textContent = wordResults.length;
-            
+
             // 更新全部結果
             const allResultsDiv = document.getElementById('allResults');
             allResultsDiv.innerHTML = `<h2>找到 ${results.length} 個結果：</h2>`;
             results.forEach((result, index) => renderResult(result, index, allResultsDiv));
-            
+
             // 更新 Excel 結果
             const excelResultsDiv = document.getElementById('excelResults');
             excelResultsDiv.innerHTML = `<h2>找到 ${excelResults.length} 個 Excel 結果：</h2>`;
             excelResults.forEach((result, index) => renderResult(result, index, excelResultsDiv));
-            
+
             // 更新 Word 結果
             const wordResultsDiv = document.getElementById('wordResults');
             wordResultsDiv.innerHTML = `<h2>找到 ${wordResults.length} 個 Word 結果：</h2>`;
@@ -416,6 +416,6 @@
       });
     });
   </script>
-  <h2>Tom.Tang - 松凌自製軟體</h2>
+  <h2>Tom - 造名堂室內空間設計</h2>
 </body>
 </html>
