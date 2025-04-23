@@ -29,10 +29,21 @@ jobs:
           node-version: 21
           cache: 'pnpm'
 
-      - name: Install pnpm
-        run: npm install -g pnpm
+      # 👉 安裝 pnpm（Windows）
+      - name: Install pnpm on Windows
+        if: runner.os == 'Windows'
+        run: |
+          npm install -g pnpm
+          echo "%APPDATA%\\npm" >> $GITHUB_PATH
 
-      - name: Install Dependencies
+      # 👉 安裝 pnpm（macOS / Linux）
+      - name: Install pnpm on macOS/Linux
+        if: runner.os != 'Windows'
+        run: |
+          npm install -g pnpm
+          echo "$(npm bin -g)" >> $GITHUB_PATH
+
+      - name: Install Dependencies with pnpm
         run: pnpm install
 
       - name: Build Electron App
