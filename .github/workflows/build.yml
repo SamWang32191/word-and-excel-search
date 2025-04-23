@@ -29,8 +29,11 @@ jobs:
           node-version: 21
           cache: 'pnpm'
 
+      - name: Install pnpm
+        run: npm install -g pnpm
+
       - name: Install Dependencies
-        run: npm install
+        run: pnpm install
 
       - name: Build Electron App
         run: npm run build
